@@ -33,13 +33,3 @@ for mt940_file in "$@" ; do
 done \
 | sort | uniq
 
-#!/bin/bash
-print_help () {
-    echo -e "Fix mt940 from bnp bank before parsing
-
-\033[1mUsage:\033[0m   
-\t$0 <input file>
-"
-} 
-
-
