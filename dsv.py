@@ -1,8 +1,13 @@
+from typing import List, Iterable
+
+
 def dsv_escape(string):
     return str(string).replace('\\','\\\\').replace('\n', '\\n').replace(';','\;')
 
+
 def dsv_record_dump(elements):
     return ";".join(map(dsv_escape, elements))
+
 
 def dsv_value_load(line):
     escape_sequences = {
@@ -31,6 +36,7 @@ def dsv_value_load(line):
             value+=c
     return value, offset
 
+
 def dsv_record_load(line):
     offset=0
     parsed = []
@@ -39,6 +45,11 @@ def dsv_record_load(line):
         offset += parsed_chars
         parsed.append(value)
     return parsed
+
+
+def dsv_reader(data_source: Iterable[str]) -> Iterable[List[str]]:
+    return map(dsv_record_load, data_source)
+
 
 if __name__ == "__main__":
     test_data=['1', '1.1', 2, '3.3', ';', 'żółw', '\n\n\t;dupa']
