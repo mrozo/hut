@@ -94,6 +94,7 @@ def mt940_to_dsv(transactions):
             t['amount'].currency,
             transaction_type(t['status']),
         ])
+
         
 if __name__ == "__main__":
     import sys
