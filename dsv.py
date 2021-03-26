@@ -2,7 +2,7 @@ from typing import List, Iterable
 
 
 def dsv_escape(string):
-    return str(string).replace('\\','\\\\').replace('\n', '\\n').replace(';','\;')
+    return str(string).replace('\\', '\\\\').replace('\n', '\\n').replace(';', '\;')
 
 
 def dsv_record_dump(elements):
@@ -38,9 +38,10 @@ def dsv_value_load(line):
 
 
 def dsv_record_load(line):
-    offset=0
+    line=line.strip()
+    offset = 0
     parsed = []
-    while offset <len(line):
+    while offset < len(line):
         value, parsed_chars = dsv_value_load(line[offset:])
         offset += parsed_chars
         parsed.append(value)
