@@ -52,11 +52,21 @@ def dsv_reader(data_source: Iterable[str]) -> Iterable[List[str]]:
     return map(dsv_record_load, data_source)
 
 
+def interleave_list_with_element(the_list: Iterable, element):
+    for list_element in the_list:
+        yield list_element
+        yield element
+
+
+def dsv_generator(data_source: Iterable, method='as_dsv'):
+    return interleave_list_with_element(map(lambda r: getattr(r, method)(), data_source), "\n")
+
+
 if __name__ == "__main__":
-    test_data=['1', '1.1', 2, '3.3', ';', 'żółw', '\n\n\t;dupa']
+    test_data = ['1', '1.1', 2, '3.3', ';', 'żółw', '\n\n\t;dupa']
     dumped_data=dsv_record_dump(test_data)
     loaded_data=dsv_record_load(dumped_data)
-    if not all(map(lambda a,b: str(a)==str(b), test_data, loaded_data)) or len(test_data) != len(loaded_data):
+    if not all(map(lambda a,b: str(a) == str(b), test_data, loaded_data)) or len(test_data) != len(loaded_data):
         print(f"test_data:'{test_data} != loaded_data:'{loaded_data}")
         exit(1)
 

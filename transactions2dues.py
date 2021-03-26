@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-from hacker import hacker_reader, interleave_list_with_element
+from hacker import hacker_reader
 from collections import namedtuple
 from typing import Iterable
-from dsv import dsv_reader
-from hacker import Hacker
-from skladkoinator import Event
+from dsv import dsv_reader, dsv_generator
+from data_structures import Hacker, Event
 import re
 from datetime import datetime
 
@@ -94,5 +93,4 @@ if __name__ == "__main__":
     transaction_events = sorted(transactios2dues_events(transactions, hackers), key=lambda e: e.date)
     hacker_events = sorted(hackers2events(hackers), key=lambda e: e.date)
 
-    events_dsv = map(lambda e: e.as_dsv(), events_generator(hacker_events, transaction_events))
-    output_file.writelines(interleave_list_with_element(events_dsv, "\n"))
+    output_file.writelines(dsv_generator(events_generator(hacker_events, transaction_events)))

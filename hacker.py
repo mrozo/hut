@@ -1,26 +1,8 @@
 #!/bin/env python3
-from dsv import dsv_reader, dsv_record_dump
+from data_structures import Hacker
+from dsv import dsv_reader, dsv_record_dump, dsv_generator
 from collections import namedtuple
 from typing import Callable, Iterable, Set
-
-#Hacker = namedtuple('Hacker', ['hid', 'nick', 'entry_date', 'email', 'name', 'last_name', 'groups'])
-
-class Hacker:
-    def __init__(self, hid: str, nick: str, entry_date: str, email: str, name: str, last_name: str, groups: [set, str]):
-        self.hid = hid
-        self.nick = nick
-        self.entry_date = entry_date
-        self.email = email
-        self.name = name
-        self.last_name = last_name
-        groups = groups or set()
-        if isinstance(groups, str):
-            groups = set(groups.split(','))
-        self.groups = groups
-
-    def as_dsv(self):
-        return dsv_record_dump([self.nick, self.nick, self.entry_date, self.email, self.name, self.last_name,
-                                ",".join(self.groups)])
 
 
 def hacker_init(hid: str, nick: str, entry_date: str, email: str, name: str, last_name: str, groups: [set, str]):
@@ -118,7 +100,7 @@ def hacker_match_groups(hacker_groups: Set[str], pattern_groups: Set[str]) -> st
 
 
 def hacker_matches(hacker: Hacker, pattern: Hacker):
-    for field in set(Hacker._fields) ^ {'groups'}:
+    for field in Hacker.fields ^ {'groups'}:
         pattern_field_val = getattr(pattern, field, None)
         hacker_field_val = getattr(hacker, field, None)
         if pattern_field_val and not patter_matches(hacker_field_val, pattern_field_val):
@@ -134,15 +116,15 @@ def hacker_matches(hacker: Hacker, pattern: Hacker):
     return True
 
 
-def hacker_assign_to_groups(current_hackers: Iterable[Hacker], groups: [str, set],  hid: str = None,
+def hacker_assign_to_groups(current_hackers: Iterable[Hacker], groups: [str, set], hid: str = None,
                             email: str = None, nick: str = None):
     hackers_edited = 0
     for h in current_hackers:
         if hacker_match(h, hid, email, nick):
             hackers_edited += 1
-            updated_hacker_data = h._asdict()
+            updated_hacker_data = {f: getattr(h, f) for f in Hacker.fields}
             updated_hacker_data['groups'] = h.groups | groups
-            yield hacker_init(*updated_hacker_data.values())
+            yield Hacker(*updated_hacker_data.values())
         else:
             yield h
     if hackers_edited == 0:
@@ -172,7 +154,7 @@ def mkCallRequest(function: Callable, *args, **kwargs) -> CallRequest:
 def hacker_cli_args2filter_call(args_namespace):
     args = vars(args_namespace)
     pattern_kwargs = {
-        k: args[k] for k in Hacker._fields if args.get(k, None)
+        k: args[k] for k in Hacker.fields if args.get(k, None)
     }
     return mkCallRequest(hacker_pattern, **pattern_kwargs)
 
@@ -204,51 +186,13 @@ remove_cmd_parser.add_argument("-i", action='store', dest='hid', default=None)
 remove_cmd_parser.set_defaults(func=hacker_cli_args2filter_call)
 remove_cmd_parser.set_defaults(reader=lambda id: hacker_remove())
 
+
 def hacker_cli_args2call(vargs: list) -> CallRequest:
     return mkCallRequest(hacker_reader)
 
 
 def bad_method(*args, **kwargs):
     raise Exception("error")
-
-
-def line_generator(file):
-    for line in file:
-        yield line
-
-
-def hacker_2_list(h: Hacker) -> Iterable:
-    return [
-        h.hid,
-        h.name,
-        h.entry_date,
-        h.email,
-        h.name,
-        h.last_name,
-        ','.join(h.groups)
-    ]
-
-
-def hacker_2_dsv(hacker: Hacker) -> str:
-    return dsv_record_dump(hacker_2_list(hacker))
-
-
-def interleave_list_with_element(the_list: Iterable, element):
-    for list_element in the_list:
-        yield list_element
-        yield element
-
-
-def hacker_list_2_list_2d(hackers: Iterable[Hacker]):
-    return map(hacker_2_list, hackers)
-
-
-def hacker_write_dsv(hackers: Iterable[Hacker], output) -> None:
-    output.writelines(
-        interleave_list_with_element(
-            map(dsv_record_dump, hacker_list_2_list_2d(hackers)),
-            "\n"
-    ))
 
 
 if __name__ == "__main__":
@@ -263,8 +207,5 @@ if __name__ == "__main__":
         exit(1)
     pattern = func(args)
     pattern = pattern.function(*pattern.args, **pattern.kwargs)
-    print(args.input_file)
-    hacker_write_dsv(
-        hacker_reader(input_file, lambda hacker: hacker_matches(hacker, pattern)),
-        output_file
-    )
+
+    output_file.writelines(dsv_generator(hacker_reader(input_file, lambda hacker: hacker_matches(hacker, pattern))))
