@@ -111,6 +111,7 @@ def parse_mt940(files: Iterable[str]) -> Iterable:
 
 if __name__ == "__main__":
     desc = f"""extract transactions from mt940 format to dsv.
+
 \033[1mUsage:\033[0m
 \t{sys.argv[0]} <source file>
 \tcat <source file> | {sys.argv[0]}

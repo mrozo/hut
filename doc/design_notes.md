@@ -150,4 +150,3 @@ parse_transactions.sh ./transactions/*.mt940 | ./transactions2events.py | classi
 
 
 
-
