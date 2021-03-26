@@ -25,7 +25,7 @@ hooks
 	@user drop
 
 struktura: user
-user: id;login;email;data_przystapienia;imie nazwisko;adres;rola
+user: id;login;email;data_przystapienia;imie nazwisko;role
 
 struktura: event
 data;user id;event [args]

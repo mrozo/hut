@@ -2,7 +2,7 @@
 
 Hut (Hackerspace unix toolkit) is set of tools intended to simplyfy management of hackerspace stuff up to the point of simplicyty, but no further. By "stuff" I mean: finances, membership, membership fees, keeping minimal data on the members in one place.
 
-The design process of those tools was inspired by [The Art of Unix Programming by Eric Steven Raymond](http://catb.org/~esr/writings/taoup/html/) and the basic priciples guiding the design process are:
+The design process of those tools was inspired by [The Art of Unix Programming by Eric Steven Raymond](http://catb.org/~esr/writings/taoup/html/) and the basic principles guiding the design process are:
 
 1. the user is a technical kind of person and the unix/linux is his/her work environment - there is no need to create elaborate web/gui applications for the hackers. Hackers love software that is easy to thinker with.
 2. design protocols and file formats, not applications - make sure the code you create can be easly integrated with other software and the input/output data can be easly reasoned just by looking at it.
@@ -76,28 +76,77 @@ This file format is intended to be easy to use within scripts and glue logic. Fo
 
 TODO
 
-## User events
+## Hackerspace finance and membership events file 
 
-User events management module is intended to allow the admin/bord member to patch member fees in order to better reflect the real life. For exaple:
+Finance and membership events file format is intended to provide a simple way of managing all events related those subjects and merge such events from different sources.
 
- * a member needs a one time membership fee cancelation due to some privte matters
- * a member, instead of paying membership fees for 3 months, bought some tool for the hackerspace
- * a member i so active and works so much, so he/she is reworded with a few "free" months of hckerspace membership
+Main expected sources of such events:
+1. list of transactions from the bank account
+2. list of transactions that happened outside the bank account 
+3. list of manual patching events for the membership fees calculation
 
+ad 3. Example events:
+1. a member asked for a lower membership fee for a year due to some private stuff
+2. a member has been reworded with honorary membership
+3. there is some fuc** up with the papers
+4. initially, when migrating to the HUT there might be some problems with migration.
 
-Event file format is a dsv file with colon ';' as the delimiter. Record format for this file is:
+### Hackerspace finance and membership events file format
+
+the file format is `*.dsv` using colon `;` as a separator. Each line represents one event:
 
 ```
-<date time>;<event type>;<comma-separted args>
+<date>;<event type>;<comma separated details>;<comment>
 ```
 
 Where:
+1. `<date>` - date of the event in format "YYYY-MM-DD"
+2. `<event type>` - string, one of the event types: newMember, duesSet, duesAdd, duesSubstract (or duesSub), transaction
+3. `<comma separated arguments>` - event depended list of details. Remember to escape all colons!
+4. `<comment>` - a human readable comment explaining why that event exists. Will not be processed by the software, only displayed to the user. Can be left empty.
 
- * `<date time>` - date at time, at which the event has ocuured, format YYYY-MM-DDTHH:MM:SS
- * `<comma-separated args>` - list of arguments for the event. For more informatio see `<event type>` documentation below:
- * `<event type>` - one of the event types:
-   * `SetMembershipFees` - set membership fees count to specified number. Arguments : `<hacker id:string>`,`<number: integer>`
-   * `AddMembershipFees` - add a specified number of membership fees to current count. Arguments `<hacker id:string>`,`<number: integer>`
-   * `ClearMembershipFees` - set memberhip fees to 0. Arguments: `<hacker id:string>`
+Event types (format is `<event name>;<arguments list>` ):
+
+* `newMember;<hacker nick>` - a new member with `<hacker nick>` has joined the HS. Start counting member fees starting from the event date and value of 0.
+* `duesSet;<hacker nick>,<value>` - set dues for the hacker to `<value>`
+* `duesAdd;<hacker nick>,<value>` - increase paid dues number for the hacker by `<value>`
+* `duesSub , dueSubstract;<hacker nick>,<value>` - decrease paid dues number for the hacker by `<value>`
+* `transaction;<amount>,<source>,<subject>` - a financial event - an `<amount>` of money has been paid/given by the `<source>`. `<subject>` is used to pass banking transaction subject.
+  * `<amount>` can be both positive (income) or negative (outcome)
+  * `<source>` can be either account number or name or any string
+  
+### Example events files - manual events file
+
+```
+2019-02-01;newMember;hacker1;no comment
+2019-02-01;newMember;hacker2;no comment
+2019-02-01;newMember;hacker3;no comment
+2019-02-01;newMember;hacker11;no comment
+2020-01-01;dueSet;-1,hacker1;moving data from physical notepad to hut
+2020-01-01;dueSet;0,hacker2;moving data from physical notepad to hut
+2020-01-01;dueSet;3,hacker3;moving data from physical notepad to hut
+2020-03-02;dueAdd,3,hacker2;hacker 2 bought a cnc machine for the hackerspace
+2020-06-11;dueSet;0,hacker11;an old member has come back
+2020-08-12;transaction;651,donation box,;income from the donation box
+```
+
+### Example events file - automatically generated transactions file from the bank account statements
+
+```
+2020-01-01;transaction,50,50 1000 2000 3000 4000 5000,membership fee for hacker1;transaction xxxxxx
+2020-01-04;transaction,50,22 1000 2000 3000 4000 5000,membership fee for hacker2;transaction yyyyyy
+2020-01-02;transaction,100,66 1000 2000 3000 4000 5000,membership fee for hacker3;transaction zzzzzz
+```
+
+## Processing flow
+
+```
+#!/bin/bash
+# calculate membership dues for every hacker
+parse_transactions.sh ./transactions/*.mt940 | ./transactions2events.py | classificator.sh -h ./hackers.dsv ./hause_rules.ini | ./merge.sh -stdin ./manual_patches.dsv ./donation_box.dsv > ./fees_report.dsv
+# user provided script used to send membership dues information to via email 
+./send_membership_dues_notifications.sh ./fees_report.dsv 
+```
+
 
 

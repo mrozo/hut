@@ -1,13 +1,5 @@
 #!/bin/bash
 
-function fix_bnp_transactions_record () {
-	if [[ -f "$1" ]] ; then
-	    sed -e '/^:28C:.*\/M/s/\/\M//' $1
-	else
-	    exit 1
-	fi
-}
-
 if [[ "$1" == "-h"  || "$1" == "--help" ]] ; then
     echo -e "
 MT940 parser capable of conferting one or multiple sources into one DSV file.
@@ -22,6 +14,15 @@ Output format can be sorted by date using sort(1).
 "
     exit;
 fi
+
+function fix_bnp_transactions_record () {
+	if [[ -f "$1" ]] ; then
+	    sed -e '/^:28C:.*\/M/s/\/\M//' "$1"
+	else
+	    exit 1
+	fi
+}
+
 
 if [[ "$#" -lt 1 ]] ; then
     python3 mt940_parser.py;
