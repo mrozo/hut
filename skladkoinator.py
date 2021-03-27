@@ -136,8 +136,6 @@ if __name__ == "__main__":
     input_file = sys.stdin if args.input_file == '-' else open(args.input_file)
     output_file = sys.stdout if args.output_file == '-' else open(args.output_file)
 
-    events = event_reader(input_file)
-
     dues_rates = HouseRules()
     dues_record = {}
     account_balance = AccountState()
