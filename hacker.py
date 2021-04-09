@@ -1,9 +1,8 @@
 #!/bin/env python3
-from data_structures import Hacker
-from dsv import dsv_reader, dsv_record_dump, dsv_generator
+from data_structures import Hacker, Event
+from dsv import dsv_reader, dsv_generator
 from collections import namedtuple
 from typing import Callable, Iterable, Set
-
 
 def hacker_init(hid: str, nick: str, entry_date: str, email: str, name: str, last_name: str, groups: [set, str]):
     groups = groups or set()
@@ -169,6 +168,7 @@ subparsers = hacker_cli_argparse.add_subparsers(help='subcommands')
 show_cmd_parser = subparsers.add_parser('show')
 show_cmd_parser.add_argument("-if", action="store", dest="input_file", default="-", required=False)
 show_cmd_parser.add_argument("-of", action="store", dest="output_file", default="-", required=False)
+show_cmd_parser.add_argument("-f",  action="store", dest="format", default="dsv", required=False)
 
 show_cmd_parser.add_argument("-e", action='store', dest='email', default=None, required=False)
 show_cmd_parser.add_argument("-i", action='store', dest='hid', default=None, required=False)
@@ -181,6 +181,7 @@ show_cmd_parser.set_defaults(func=hacker_cli_args2filter_call)
 remove_cmd_parser = subparsers.add_parser('rm')
 remove_cmd_parser.add_argument("-if", action="store", dest="input_file", default="-", required=False)
 remove_cmd_parser.add_argument("-of", action="store", dest="output_file", default="-", required=False)
+remove_cmd_parser.add_argument("-f",  action="store", dest="format", default="dsv", required=False)
 
 remove_cmd_parser.add_argument("-i", action='store', dest='hid', default=None)
 remove_cmd_parser.set_defaults(func=hacker_cli_args2filter_call)
@@ -195,11 +196,21 @@ def bad_method(*args, **kwargs):
     raise Exception("error")
 
 
+def hacker2event(hacker: Hacker) -> Event:
+    return Event(date=hacker.entry_date, type="newMember", args_str=hacker.email)
+
+
+def event_generator(hackers: Iterable[Hacker]):
+    hackers = sorted(hackers, key=lambda h: h.entry_date)
+    return dsv_generator(map(hacker2event, hackers))
+
+
 if __name__ == "__main__":
     import sys
     args = hacker_cli_argparse.parse_args()
     input_file = sys.stdin if args.input_file == '-' else open(args.input_file)
     output_file = sys.stdout if args.output_file == '-' else open(args.output_file)
+    formatter = dsv_generator if args.format == 'dsv' else event_generator
     func = getattr(args, 'func', None)
     if not func:
         sys.stderr.write("missing/wrong function\n")
@@ -208,4 +219,4 @@ if __name__ == "__main__":
     pattern = func(args)
     pattern = pattern.function(*pattern.args, **pattern.kwargs)
 
-    output_file.writelines(dsv_generator(hacker_reader(input_file, lambda hacker: hacker_matches(hacker, pattern))))
+    output_file.writelines(formatter(hacker_reader(input_file, lambda hacker: hacker_matches(hacker, pattern))))

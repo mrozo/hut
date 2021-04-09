@@ -3,11 +3,11 @@ import argparse
 from hacker import hacker_reader
 from collections import namedtuple
 from typing import Iterable
-from dsv import dsv_reader, dsv_generator
+from dsv import dsv_reader, dsv_generator, dsv_record_dump
 from data_structures import Hacker, Event
 import re
 from datetime import datetime
-
+from sys import stderr
 
 Transaction = namedtuple("Transaction", ['date', 'extra_details', 'contractors_full_account_number', 'subject',
                                          'contractors_address', 'amount', 'currency', 'status'])
@@ -17,6 +17,10 @@ hacker_cli_argparse.add_argument("--hackers", action="store", dest="hackers_file
 hacker_cli_argparse.add_argument("-if", action="store", dest="input_file",  default="-", required=False)
 hacker_cli_argparse.add_argument("-of", action="store", dest="output_file", default="-", required=False)
 
+
+def ERR(transaction: Transaction):
+    sys.stderr.write(dsv_record_dump(transaction))
+    sys.stderr.write("\n")
 
 def parse_transactions(data_source: Iterable[list]):
     return map(lambda record: Transaction(*record), dsv_reader(data_source))
@@ -41,16 +45,25 @@ def find_hacker_email(transaction: Transaction, hackers: Iterable[Hacker]) -> st
     for hacker in hackers:
         name, last_name = drop_polish_letters(hacker.name.lower()), drop_polish_letters(hacker.last_name.lower())
         subject = drop_polish_letters(transaction.subject.lower())
-        #print(f"{name} {last_name} ? {subject}" )
         if name in subject and last_name in subject:
             return hacker.email
 
+        contractors_address = drop_polish_letters(transaction.contractors_address.lower())
+        if name in contractors_address and last_name in contractors_address:
+            return hacker.email
+    return ""
+
 
 def transactios2dues_events(transactions: Iterable[Transaction], hackers: Iterable[Hacker]) -> Iterable[Event]:
-    for t in filter(is_due, transactions):
-        hacker_email = find_hacker_email(t, hackers)
-        if hacker_email:
-            yield Event(t.date, 'transaction', f"{t.amount},{hacker_email}", '')
+    for t in transactions:
+        if is_due(t):
+            hacker_email = find_hacker_email(t, hackers)
+            if hacker_email:
+                yield Event(t.date, 'transaction', f"{t.amount},{hacker_email}", '')
+            else:
+                ERR(t)
+        else:
+            ERR(t)
 
 
 def first_of_the_month_event_generator(start_date: datetime) -> Iterable[Event]:

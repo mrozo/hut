@@ -1,9 +1,11 @@
 from datetime import datetime
 from decimal import Decimal
 from functools import reduce
-from typing import AnyStr
+from typing import AnyStr, List
+from dataclasses import dataclass
+from datetime import datetime
 
-from dsv import dsv_record_dump
+from dsv import dsv_record_dump, dsv_record_load
 
 
 class Hacker:
@@ -22,7 +24,7 @@ class Hacker:
         self.groups = groups
 
     def as_dsv(self):
-        return dsv_record_dump([self.nick, self.nick, self.entry_date, self.email, self.name, self.last_name,
+        return dsv_record_dump([self.hid, self.nick, self.entry_date, self.email, self.name, self.last_name,
                                 ",".join(self.groups)])
 
 
@@ -45,6 +47,7 @@ class Event:
 class HouseRules:
     default_rate = Decimal(100)
     rates = {}
+    max_prepaid_dues_count = float('inf')
 
     def __getitem__(self, email: str):
         return self.rates.get(str, HouseRules.default_rate)
@@ -63,14 +66,30 @@ class HouseRules:
         return val
 
 
+@dataclass(frozen=True, order=True)
+class DuesHistoryRecord:
+    date: datetime
+    dues_balance: Decimal
+    transaction_amount: Decimal
+
+    def as_dsv(self, delimiter=';'):
+        return dsv_record_dump([self.date, self.transaction_amount, self.dues_balance], delimiter=delimiter)
+
+    @classmethod
+    def from_dsv(cls, line: str, delimiter: str = ';'):
+        return cls(*dsv_record_load(line, delimiter=delimiter))
+
+
 class HackerDues:
     balance = Decimal(0)
     email = None
+    dues_history: List[DuesHistoryRecord] = None
 
     def __init__(self, entry_date: datetime, email: AnyStr, balance: Decimal = 0):
         self.entry_date = entry_date
         self.balance = balance
         self.email = email
+        self.dues_history = []
 
     def __str__(self):
         return f"{self.__class__.__name__}(email={self.email}, balance={self.balance})"
@@ -79,10 +98,23 @@ class HackerDues:
         return self.__str__()
 
     def as_dsv(self):
-        return dsv_record_dump([self.email, self.balance])
+        record = [self.email, self.balance]
+        record += list(map(lambda t: t.as_dsv(delimiter=','), self.dues_history))
+        return dsv_record_dump(record)
+
+    @classmethod
+    def from_dsv(cls, line, delimiter=';'):
+        record = dsv_record_load(line, delimiter)
+        dues_record = cls(None, record[0], Decimal(record[1]))
+        if len(record) > 2:
+            dues_record.dues_history.extend(list(map(
+                lambda r: DuesHistoryRecord.from_dsv(r, delimiter=','), record[2:]
+            )))
+        return dues_record
 
 
 class AccountState:
+
     def __init__(self):
         self.transaction_events = []
         self.balance = Decimal(0)

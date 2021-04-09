@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 from typing import Mapping
-from datetime import datetime
+from datetime import timedelta
 from typing import Iterable
 
-from data_structures import Event, HouseRules, HackerDues, AccountState
+from data_structures import Event, HouseRules, HackerDues, AccountState, DuesHistoryRecord
 from dsv import dsv_reader, dsv_generator
 from decimal import Decimal
 from functools import partial
@@ -13,7 +13,26 @@ from functools import partial
 class UnknownEventException(Exception):
     pass
 
+
+ONE_MONTH = timedelta(days=30)
+
+
 class EventHandlers:
+
+    @staticmethod
+    def setHackerDue(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
+        """
+        Set due price for selected hacker
+        Event args: due price, hacker email
+        """
+        rate = Decimal(event.args[0])
+        hacker_email = event.args[1]
+        rates[hacker_email] = rate
+
+    @staticmethod
+    def setMaxPrepaidDuesCount(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
+        count = int(event.args.pop())
+        rates.max_prepaid_dues_count = count
 
     @staticmethod
     def nextMonth(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
@@ -22,7 +41,8 @@ class EventHandlers:
         Event args: None
         """
         for due_record in dues.values():
-            due_record.balance -= 1
+            if event.date - due_record.entry_date > ONE_MONTH:
+                due_record.balance -= 1
 
     @staticmethod
     def newMember(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
@@ -31,7 +51,7 @@ class EventHandlers:
         Event args: email
         """
         hacker_email = event.args.pop()
-        dues[hacker_email] = HackerDues(datetime.now(), hacker_email)
+        dues[hacker_email] = HackerDues(event.date, hacker_email)
 
     @staticmethod
     def dueSet(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
@@ -61,7 +81,13 @@ class EventHandlers:
         if subject in dues:
             hacker_email = subject
             rate = rates[hacker_email]
-            dues[hacker_email].balance += amount / rate
+            balance = dues[hacker_email].balance
+            if balance < rates.max_prepaid_dues_count:
+                new_balance = min(balance + amount / rate, rates.max_prepaid_dues_count)
+                dues[hacker_email].balance = new_balance
+            dues[hacker_email].dues_history.append(DuesHistoryRecord(
+                event.date, dues[hacker_email].balance, amount
+            ))
         account_balance.register_transaction(event)
 
     @staticmethod

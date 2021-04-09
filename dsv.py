@@ -1,15 +1,15 @@
 from typing import List, Iterable
 
 
-def dsv_escape(string):
-    return str(string).replace('\\', '\\\\').replace('\n', '\\n').replace(';', '\;')
+def dsv_escape(string, delimiter=';'):
+    return str(string).replace('\\', '\\\\').replace('\n', '\\n').replace(delimiter, f'\{delimiter}')
 
 
-def dsv_record_dump(elements):
-    return ";".join(map(dsv_escape, elements))
+def dsv_record_dump(elements, delimiter=';'):
+    return delimiter.join(map(dsv_escape, elements))
 
 
-def dsv_value_load(line):
+def dsv_value_load(line, delimiter=';'):
     escape_sequences = {
         'a':'\a',
         'b':'\b',
@@ -30,26 +30,26 @@ def dsv_value_load(line):
             escape = False
         elif c=='\\':
             escape=True
-        elif c==';':
+        elif c==delimiter:
             break
         else:
             value+=c
     return value, offset
 
 
-def dsv_record_load(line):
+def dsv_record_load(line, delimiter=';'):
     line=line.strip()
     offset = 0
     parsed = []
     while offset < len(line):
-        value, parsed_chars = dsv_value_load(line[offset:])
+        value, parsed_chars = dsv_value_load(line[offset:], delimiter)
         offset += parsed_chars
         parsed.append(value)
     return parsed
 
 
-def dsv_reader(data_source: Iterable[str]) -> Iterable[List[str]]:
-    return map(dsv_record_load, data_source)
+def dsv_reader(data_source: Iterable[str], delimiter=';') -> Iterable[List[str]]:
+    return map(lambda l: dsv_record_load(l, delimiter), data_source)
 
 
 def interleave_list_with_element(the_list: Iterable, element):
