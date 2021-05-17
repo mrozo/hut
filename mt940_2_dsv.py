@@ -26,7 +26,6 @@ def parse_desc_tag(desc_tag_contents):
     l = lines[0]
     while l:
         if l.startswith('^00'):
-            desc['description'] = re.match('[^^]{,27}', l[3:]).group().strip()
             l = lines.pop(0)
         elif l.startswith('^30'):
             desc['contractors_bank_account'] += l[3:].strip()
@@ -37,29 +36,35 @@ def parse_desc_tag(desc_tag_contents):
         elif l.startswith('^31'):
             desc['contractors_account_number'] = l[3:]
             l = lines.pop(0)
+        elif l.startswith('^34'):
+            l = lines.pop(0)
+            pass
         elif re.match('^\^2[01234567]', l):
             l = l[3:]
-            desc['subject'] += l[:27] 
-            if len(l) > 27:
-                l = l[27:]
+            parts = l.split('^', 1)
+            desc['subject'] += parts[0]
+            if len(parts) > 1:
+                l = f"^{parts[1]}"
             else:
                 l = lines.pop(0)
         elif re.match('^\^6[23]', l):
             l = l[3:]
-            desc['additional_description'] += l[:27] 
-            if len(l) > 27:
-                l = l[27:]
+            parts = l.split('^', 1)
+            desc['additional_description'] += parts[0]
+            if len(parts) > 1:
+                l = f"^{parts[1]}"
             else:
                 l = lines.pop(0)
         elif re.match('^\^3[23]', l):
             l = l[3:]
-            desc['contractors_address'] += l[:27] 
-            if len(l) > 27:
-                l = l[27:]
+            parts = l.split('^', 1)
+            desc['contractors_address'] += parts[0]
+            if len(parts) > 1:
+                l = f"^{parts[1]}"
             else:
                 l = lines.pop(0)
         else:
-            stderr.write(f"filed to parse '{l}'")
+            stderr.write(f"failed to parse '{l}'\n")
             l=lines.pop(0)
 
     if 0 == len(desc['contractors_full_account_number']):
@@ -136,7 +141,7 @@ if __name__ == "__main__":
     hacker_cli_argparse.add_argument("-of", action="store", dest="output_file", default="-", required=False)
 
     args = hacker_cli_argparse.parse_args()
-    output_file = sys.stdout if args.output_file == '-' else open(args.output_file)
+    output_file = sys.stdout if args.output_file == '-' else open(args.output_file, 'w')
 
     output_file.writelines(mt940_to_dsv(parse_mt940(args.input_files)))
 

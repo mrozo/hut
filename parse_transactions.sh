@@ -16,21 +16,19 @@ Output format can be sorted by date using sort(1).
 fi
 
 function fix_bnp_transactions_record () {
-	if [[ -f "$1" ]] ; then
-	    sed -e '/^:28C:.*\/M/s/\/\M//' "$1"
-	else
-	    exit 1
-	fi
+    # :28C:0668-2019/BPL -> :28C:0668/2019
+    # :28C:12/2020/M -> :28C:12/2020
+    sed -e '/^:28C:/{s/-/\//;s/\/[^0-9].*$//}'
 }
 
 
 if [[ "$#" -lt 1 ]] ; then
-    python3 mt940_parser.py;
+    fix_bnp_transactions_record | python3 mt940_2_dsv.py | sort | uniq
     exit;
 fi
 
 for mt940_file in "$@" ; do
-    fix_bnp_transactions_record "$mt940_file" | python3 mt940_2_dsv.py
+    fix_bnp_transactions_record < "$mt940_file"  | python3 mt940_2_dsv.py
 done \
 | sort | uniq
 

@@ -19,7 +19,7 @@ hacker_cli_argparse.add_argument("-of", action="store", dest="output_file", defa
 
 
 def ERR(transaction: Transaction):
-    sys.stderr.write(dsv_record_dump(transaction))
+    sys.stderr.write(str(transaction))
     sys.stderr.write("\n")
 
 def parse_transactions(data_source: Iterable[list]):
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     import sys
     args = hacker_cli_argparse.parse_args()
     input_file = sys.stdin if args.input_file == '-' else open(args.input_file)
-    output_file = sys.stdout if args.output_file == '-' else open(args.output_file)
+    output_file = sys.stdout if args.output_file == '-' else open(args.output_file, 'w')
     hackers_file = open(args.hackers_file)
 
     hackers = list(hacker_reader(hackers_file))

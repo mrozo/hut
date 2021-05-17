@@ -20,9 +20,6 @@ Historia wpłat:
 """ + '\n'.join(dues_table(record.dues_history))
 
 
-def send_email(subject, body, to):
-
-
 if __name__ == "__main__":
     input_file = stdin
     output_file = stdout

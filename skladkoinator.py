@@ -10,7 +10,16 @@ from decimal import Decimal
 from functools import partial
 
 
+class EventReaderException(Exception):
+    pass
+
+
 class UnknownEventException(Exception):
+    def __init__(self,event_name: str):
+        self.event_name = event_name
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.event_name})"
     pass
 
 
@@ -59,16 +68,16 @@ class EventHandlers:
         Set dues balance to value for selected hacker
         Event args: dues balance, email
         """
-        balance, hacker_email = event.args[0:2]
+        hacker_email, balance = event.args[0:2]
         dues[hacker_email].balance = Decimal(balance)
 
     @staticmethod
     def dueAdd(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
         """
-        Invrease dues balance for selected hacker by value
-        Event args: value, email
+        Increase dues balance for selected hacker by value
+        Event args: email, value
         """
-        balance, hacker_email = event.args[0:2]
+        hacker_email, balance = event.args[0:2]
         dues[hacker_email].balance += Decimal(balance)
 
     @staticmethod
@@ -142,13 +151,23 @@ class EventHandlers:
         raise UnknownEventException(event.type)
 
 
+def is_line_not_empty(line: str):
+    return len(line) != 0
+
+
 def event_reader(event_source: Iterable[str]) -> Iterable[Event]:
-    for event_data in dsv_reader(event_source):
-        yield Event(*event_data)
+    for event_data in filter(is_line_not_empty, dsv_reader(event_source)):
+        try:
+            yield Event(*event_data)
+        except Exception as e:
+            raise EventReaderException(f"failed to read event line: {event_data}:\n{e}")
 
 
 def handle_event(event: Event, dues: Mapping[str, HackerDues], rates: HouseRules, account_balance: AccountState):
-    return getattr(EventHandlers, event.type, EventHandlers.default)(event, dues, rates, account_balance)
+    try:
+        return getattr(EventHandlers, event.type, EventHandlers.default)(event, dues, rates, account_balance)
+    except Exception as exc:
+        raise Exception(f"Exception '{exc}' happened during handling of event: {event.as_dsv()}")
 
 
 if __name__ == "__main__":
@@ -160,7 +179,7 @@ if __name__ == "__main__":
 
     args = hacker_cli_argparse.parse_args()
     input_file = sys.stdin if args.input_file == '-' else open(args.input_file)
-    output_file = sys.stdout if args.output_file == '-' else open(args.output_file)
+    output_file = sys.stdout if args.output_file == '-' else open(args.output_file, 'w')
 
     dues_rates = HouseRules()
     dues_record = {}

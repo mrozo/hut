@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from functools import reduce
 from typing import AnyStr, List
 from dataclasses import dataclass
@@ -125,3 +126,34 @@ class AccountState:
     def get_balance(self):
         return reduce(lambda balance, transaction_event: balance + Decimal(transaction_event.args[0]),
                       self.transaction_events, self.balance)
+
+
+@dataclass(order=True)
+class Transaction:
+    date: datetime
+    extra_details: str
+    contractor_account_number: str
+    subject: str
+    contractor_address: str
+    amount: Decimal
+    currency: str
+    transaction_type: str
+
+    def __init__(self, date, extra_details, contractor_account_number, subject, contractor_address, amount, currency, transaction_type ):
+        self.date = datetime.fromisoformat(date)
+        self.extra_details = extra_details
+        self.contractor_account_number = contractor_account_number
+        self.subject = subject
+        self.contractor_address = contractor_address
+        self.amount = Decimal(amount)
+        self.currency = currency
+        self.transaction_type = transaction_type
+
+
+class TransactionClassification(Enum):
+    DUE = "due"
+    DONATION = "donation"
+    OTHER_INCOME = "other_income"
+    RENT_AND_MEDIA = "rent_and_media"
+    OTHER_OUTCOME = "other_outcome"
+    UNKNOWN = "unknown"

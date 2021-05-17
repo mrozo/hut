@@ -1,0 +1,16 @@
+2000-01-01;setDefaultDue;100;
+2000-01-02;newMember;adam@example.com;
+2000-02-01;nextMonth;;
+2000-02-02;assertHackerDueBalanceEquals;adam@example.com,0;first month is 'free as in free beer'
+2000-02-03;nextMonth;;
+2000-02-06;assertHackerDueBalanceEquals;adam@example.com,-1;
+2000-02-07;nextMonth;;
+2000-03-01;assertHackerDueBalanceEquals;adam@example.com,-2;
+2000-03-02;transaction;100,adam@example.com;
+2000-03-03;assertHackerDueBalanceEquals;adam@example.com,-1;
+2000-03-04;transaction;200,adam@example.com;
+2000-03-05;assertHackerDueBalanceEquals;adam@example.com,1;
+2000-04-01;nextMonth;;
+2000-04-02;assertHackerDueBalanceEquals;adam@example.com,0;
+2000-04-03;dueAdd;adam@example.com,3;adam asked for 3 months off, due to financial problems
+2000-04-02;assertHackerDueBalanceEquals;adam@example.com,3;

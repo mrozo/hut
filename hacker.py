@@ -209,7 +209,7 @@ if __name__ == "__main__":
     import sys
     args = hacker_cli_argparse.parse_args()
     input_file = sys.stdin if args.input_file == '-' else open(args.input_file)
-    output_file = sys.stdout if args.output_file == '-' else open(args.output_file)
+    output_file = sys.stdout if args.output_file == '-' else open(args.output_file, 'w')
     formatter = dsv_generator if args.format == 'dsv' else event_generator
     func = getattr(args, 'func', None)
     if not func:
