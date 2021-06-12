@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 import argparse
 from hacker import hacker_reader
-from collections import namedtuple
 from typing import Iterable
-from dsv import dsv_reader, dsv_generator, dsv_record_dump
+from dsv import dsv_reader, dsv_generator
 from data_structures import Hacker, Event
 import re
 from datetime import datetime
-from sys import stderr
-
-Transaction = namedtuple("Transaction", ['date', 'extra_details', 'contractors_full_account_number', 'subject',
-                                         'contractors_address', 'amount', 'currency', 'status'])
+from data_structures import Transaction
 
 hacker_cli_argparse = argparse.ArgumentParser()
 hacker_cli_argparse.add_argument("--hackers", action="store", dest="hackers_file", required=True)
@@ -48,8 +44,8 @@ def find_hacker_email(transaction: Transaction, hackers: Iterable[Hacker]) -> st
         if name in subject and last_name in subject:
             return hacker.email
 
-        contractors_address = drop_polish_letters(transaction.contractors_address.lower())
-        if name in contractors_address and last_name in contractors_address:
+        contractor_address = drop_polish_letters(transaction.contractor_address.lower())
+        if name in contractor_address and last_name in contractor_address:
             return hacker.email
     return ""
 

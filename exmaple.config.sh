@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+SMTP_SERVER="smtp.gmail.com:587"
+SENDER_EMAIL=""
+SMTP_PASS=""
+SMTP_LOGIN=""
+SMTP_PORT="587"
+SOURCE_FOLDER="./test_email"
+
+HACKERS_FILE="hackers.dsv"
+HOUSE_RULES="house_rules.dsv"
+TRANSACTIONS="transactions/*"
+OUT="out"
+NOT_DUES_FILE="${OUT}/not_dues.dsv"
+MONTHLY_REPORT="${OUT}/monthly_report.dsv"
+DUES_REPORT="${OUT}/membership_fees_report.dsv"
+EMAIL_TEMP_DIR="${OUT}/emails_to_send/"

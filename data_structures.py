@@ -73,7 +73,12 @@ class DuesHistoryRecord:
     dues_balance: Decimal
     transaction_amount: Decimal
 
-    def as_dsv(self, delimiter=';'):
+    def __init__(self, date, dues_balance: Decimal, transaction_amount: Decimal):
+        object.__setattr__(self, 'date', date if isinstance(date, datetime) else datetime.fromisoformat(date))
+        object.__setattr__(self, 'transaction_amount',  transaction_amount)
+        object.__setattr__(self, 'dues_balance', dues_balance)
+
+    def as_dsv(self, delimiter=';') -> str:
         return dsv_record_dump([self.date, self.transaction_amount, self.dues_balance], delimiter=delimiter)
 
     @classmethod
@@ -140,7 +145,7 @@ class Transaction:
     transaction_type: str
 
     def __init__(self, date, extra_details, contractor_account_number, subject, contractor_address, amount, currency, transaction_type ):
-        self.date = datetime.fromisoformat(date)
+        self.date = date if isinstance(date, datetime) else datetime.fromisoformat(date)
         self.extra_details = extra_details
         self.contractor_account_number = contractor_account_number
         self.subject = subject

@@ -1,4 +1,5 @@
 #!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 if [[ "$1" == "-h"  || "$1" == "--help" ]] ; then
     echo -e "
@@ -28,7 +29,7 @@ if [[ "$#" -lt 1 ]] ; then
 fi
 
 for mt940_file in "$@" ; do
-    fix_bnp_transactions_record < "$mt940_file"  | python3 mt940_2_dsv.py
+    fix_bnp_transactions_record < "$mt940_file"  | python3 "${SCRIPT_DIR}/"mt940_2_dsv.py
 done \
 | sort | uniq
 
